@@ -1,0 +1,68 @@
+- name: Install and run Pre-Requisites
+  hosts: localhost
+  tasks:
+    - name: Install services
+      state: present
+      yum:
+        - firewalld
+        - mariadb-server
+        - httpd
+        - php
+        - php-mysql
+    - name: Run and Enable services
+      service:
+        name: '{{item}}'
+        state: started
+        enabled: yes
+      with_items:
+        - firewalld
+        - mariadb-server
+        - httpd
+- name: Configure firewall
+  hosts: localhost
+  tasks:
+    - name: Configure firewall for database
+      command: '{{item}}'
+      with_items:
+        - firewall-cmd --permanent --zone=public --add-port=3306/tcp
+        - firewall-cmd --reload
+    - name: Configure firewall for Web
+      command: '{{item}}'
+      with_items:
+        - firewall-cmd --permanent --zone=public --add-port=80/tcp
+        - sudo firewall-cmd --reload
+- name: Clone repository to /var/www/html/
+  hosts: localhost
+  tasks:
+    - name: Clone repository to /var/www/html/
+      git:
+        repo: https://github.com/kodekloudhub/learning-app-ecommerce.git
+        dest: /var/www/html/
+        force: true
+- name: Configure database
+  hosts: localhost
+  tasks:
+    - name: Create database
+      mysql_db:
+        name: ecomdb
+        state: present
+    - name: Import to database
+      mysql_db:
+        name: ecomdb
+        state: import
+        target: /var/www/html/assets/db-load-script.sql
+    - name: Create user
+      mysql_user:
+        name: ecomuser
+        host: localhost
+        password: ecompassword
+        priv: '*.*:ALL'
+        state: present
+- name: Change DirectoryIndex index.html to DirectoryIndex index.php to make the php page the default page
+  hosts: localhost
+  tasks:
+    - name: Change directory index
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "DirectoryIndex index.html"
+        replace: "DirectoryIndex index.php"
