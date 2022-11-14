@@ -2,13 +2,17 @@
   hosts: webserver
   tasks:
   - name: Install services
-    state: present
     yum:
-      - firewalld
-      - mariadb-server
-      - httpd
-      - php
-      - php-mysql
+      name:
+        - firewalld
+        - mariadb-server
+        - httpd
+        - php
+        - php-mysql
+        - python3-pip
+        - MySQL-python
+        - git
+      state: present
   - name: Run and Enable services
     service:
       name: '{{item}}'
@@ -16,7 +20,7 @@
       enabled: yes
     with_items:
       - firewalld
-      - mariadb-server
+      - mariadb
       - httpd
 - name: Configure firewall
   hosts: webserver
@@ -30,7 +34,7 @@
     command: '{{item}}'
     with_items:
       - firewall-cmd --permanent --zone=public --add-port=80/tcp
-      - sudo firewall-cmd --reload
+      - firewall-cmd --reload
 - name: Clone repository to /var/www/html/
   hosts: webserver
   tasks:
